@@ -1,124 +1,46 @@
 #include "MiniCubeVisualizer.h"
 #include "MiniCubeFunctions.h"
+
+#include <iostream>
 #include <opencv2/imgproc.hpp>
 
 MiniCubeVisualizer::MiniCubeVisualizer()
 {
-    for(int i=0;i<8;i++){
-        m_cube[i] = i;
-    }
-    
     for(int i=0;i<6;i++){
         for(int j=0;j<4;j++){
-            m_cubeFace[i][j] = i;
+            m_cube[i][j] = i;
         }
     }
-}
-
-void halfBlockL(int cubeFace[6][4], int sideIdList[5], int idList[12])
-{
-    int s0=sideIdList[0], 
-        s1=sideIdList[1], s2=sideIdList[2],
-        s3=sideIdList[3], s4=sideIdList[4];
-    
-    int i0=idList[0], i1=idList[1], i2=idList[2],
-        i3=idList[3], i4=idList[4], i5=idList[5],
-        i6=idList[6], i7=idList[7], i8=idList[8],
-        i9=idList[9], i10=idList[10], i11=idList[11];
-    
-    int tmpv1 = cubeFace[s0][i3];
-    cubeFace[s0][i3] = cubeFace[s0][i4];
-    cubeFace[s0][i4] = cubeFace[s0][i8];
-    cubeFace[s0][i8] = cubeFace[s0][i7];
-    cubeFace[s0][i7] = tmpv1;
-    
-    tmpv1 = cubeFace[s1][i0];
-    int tmpv2 = cubeFace[s1][i1];
-    cubeFace[s1][i0] = cubeFace[s4][i5];
-    cubeFace[s1][i1] = cubeFace[s4][i9];
-    cubeFace[s4][i5] = cubeFace[s3][i11];
-    cubeFace[s4][i9] = cubeFace[s3][i10];
-    cubeFace[s3][i11] = cubeFace[s2][i6];
-    cubeFace[s3][i10] = cubeFace[s2][i2];
-    cubeFace[s2][i6] = tmpv1;
-    cubeFace[s2][i2] = tmpv2;
-}
-void halfBlockR(int cubeFace[6][4], int sideIdList[5], int idList[12])
-{
-    int s0=sideIdList[0], 
-        s1=sideIdList[1], s2=sideIdList[2],
-        s3=sideIdList[3], s4=sideIdList[4];
-    
-    int i0=idList[0], i1=idList[1], i2=idList[2],
-        i3=idList[3], i4=idList[4], i5=idList[5],
-        i6=idList[6], i7=idList[7], i8=idList[8],
-        i9=idList[9], i10=idList[10], i11=idList[11];
-    
-    int tmpv1 = cubeFace[s0][i3];
-    cubeFace[s0][i3] = cubeFace[s0][i7];
-    cubeFace[s0][i7] = cubeFace[s0][i8];
-    cubeFace[s0][i8] = cubeFace[s0][i4];
-    cubeFace[s0][i4] = tmpv1;
-    
-    tmpv1 = cubeFace[s1][i0];
-    int tmpv2 = cubeFace[s1][i1];
-    cubeFace[s1][i0] = cubeFace[s2][i6];
-    cubeFace[s1][i1] = cubeFace[s2][i2];
-    cubeFace[s2][i6] = cubeFace[s3][i11];
-    cubeFace[s2][i2] = cubeFace[s3][i10];
-    cubeFace[s3][i11] = cubeFace[s4][i5];
-    cubeFace[s3][i10] = cubeFace[s4][i9];
-    cubeFace[s4][i5] = tmpv1;
-    cubeFace[s4][i9] = tmpv2;
 }
 
 void MiniCubeVisualizer::vizFrontL()
 {
     frontL(m_cube);
-    
-    int sideIdList[5] = {0,5,3,4,1};
-    int idList[12] = {2,3,0,0,1,0,2,2,3,2,2,3};
-    halfBlockL(m_cubeFace,sideIdList,idList);
 }
 void MiniCubeVisualizer::vizFrontR()
 {
     frontR(m_cube);
-    
-    int sideIdList[5] = {0,5,3,4,1};
-    int idList[12] = {2,3,0,0,1,0,2,2,3,2,2,3};
-    halfBlockR(m_cubeFace,sideIdList,idList);
 }
 void MiniCubeVisualizer::vizRightL()
 {
     rightL(m_cube);
-    
-    int sideIdList[5] = {1,5,0,4,2};
-    int idList[12] = {3,1,1,0,1,1,3,2,3,3,3,1};
-    halfBlockL(m_cubeFace,sideIdList,idList);
 }
 void MiniCubeVisualizer::vizRightR()
 {
     rightR(m_cube);
-    
-    int sideIdList[5] = {1,5,0,4,2};
-    int idList[12] = {3,1,1,0,1,1,3,2,3,3,3,1};
-    halfBlockR(m_cubeFace,sideIdList,idList);
 }
 void MiniCubeVisualizer::vizTopL()
 {
     topL(m_cube);
-    
-    int sideIdList[5] = {5,2,3,0,1};
-    int idList[12] = {0,1,1,0,1,1,0,2,3,0,0,1};
-    halfBlockL(m_cubeFace,sideIdList,idList);
 }
 void MiniCubeVisualizer::vizTopR()
 {
     topR(m_cube);
-    
-    int sideIdList[5] = {5,2,3,0,1};
-    int idList[12] = {0,1,1,0,1,1,0,2,3,0,0,1};
-    halfBlockR(m_cubeFace,sideIdList,idList);
+}
+
+void MiniCubeVisualizer::getCurrentState(int cubeState[6][4])
+{
+    copyCubeState(m_cube,cubeState);
 }
 
 cv::Mat MiniCubeVisualizer::getImage(int isFront)
@@ -186,7 +108,7 @@ cv::Mat MiniCubeVisualizer::getImage(int isFront)
             else vizSideId = 1;
             
             int id = i%4;
-            int clrId = m_cubeFace[vizSideId][id];
+            int clrId = m_cube[vizSideId][id];
             cv::Scalar color = clrList[clrId];
             cv::drawContours(canvas,plgs,i,color,-1);
         }
@@ -235,7 +157,7 @@ cv::Mat MiniCubeVisualizer::getImage(int isFront)
             else vizSideId = 4;
             
             int id = i%4;
-            int clrId = m_cubeFace[vizSideId][id];
+            int clrId = m_cube[vizSideId][id];
             cv::Scalar color = clrList[clrId];
             cv::drawContours(canvas,plgs,i,color,-1);
         }

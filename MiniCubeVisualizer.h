@@ -19,12 +19,12 @@ public:
     //得到图片
     cv::Mat getImage(int isFront);
     
-private:
-    //魔方的各个角块
-    int m_cube[8];
+    //得到魔方当前状态
+    void getCurrentState(int cubeState[6][4]);
     
-    //用于显示
-    int m_cubeFace[6][4];
+private:
+    //魔方状态
+    int m_cube[6][4];
 };
 
 #endif // MINICUBEVISUALIZER_H

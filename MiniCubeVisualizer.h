@@ -20,11 +20,14 @@ public:
     cv::Mat getImage(int isFront);
     
     //得到魔方当前状态
-    void getCurrentState(int cubeState[6][4]);
+    std::vector<int> getCurrentState();
     
 private:
     //魔方状态
-    int m_cube[6][4];
+    std::vector<int> m_cube;
+    
+    //可视化魔方状态
+    int m_cubeFace[6][4];
 };
 
 #endif // MINICUBEVISUALIZER_H

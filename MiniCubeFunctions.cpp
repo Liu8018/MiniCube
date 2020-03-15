@@ -1,105 +1,135 @@
 #include "MiniCubeFunctions.h"
 
-void copyCubeState(const int cube1[6][4], int cube2[6][4])
+int g_cubeVecLen = 14;
+
+void rotateVec(int &v, int constV)
 {
-    int *list1 = (int*)cube1;
-    int *list2 = (int*)cube2;
+    if(v == constV)
+        return;
     
-    for(int i=0;i<24;i++){
-        list2[i] = list1[i];
+    if(constV == 1){
+        v = v==2?3:2;
+    }
+    else if(constV == 2){
+        v = v==1?3:1;
+    }
+    else{
+        v = v==1?2:1;
     }
 }
 
-void halfBlockL(int cubeFace[6][4], int sideIdList[5], int idList[12])
+void frontL(std::vector<int> &cube)
 {
-    int s0=sideIdList[0], 
-        s1=sideIdList[1], s2=sideIdList[2],
-        s3=sideIdList[3], s4=sideIdList[4];
+    int tmp = cube[0];
+    cube[0] = cube[1];
+    cube[1] = cube[5];
+    cube[5] = cube[4];
+    cube[4] = tmp;
     
-    int i0=idList[0], i1=idList[1], i2=idList[2],
-        i3=idList[3], i4=idList[4], i5=idList[5],
-        i6=idList[6], i7=idList[7], i8=idList[8],
-        i9=idList[9], i10=idList[10], i11=idList[11];
+    rotateVec(cube[7+0],1);
+    rotateVec(cube[7+1],1);
+    rotateVec(cube[7+5],1);
+    rotateVec(cube[7+4],1);
     
-    int tmpv1 = cubeFace[s0][i3];
-    cubeFace[s0][i3] = cubeFace[s0][i4];
-    cubeFace[s0][i4] = cubeFace[s0][i8];
-    cubeFace[s0][i8] = cubeFace[s0][i7];
-    cubeFace[s0][i7] = tmpv1;
-    
-    tmpv1 = cubeFace[s1][i0];
-    int tmpv2 = cubeFace[s1][i1];
-    cubeFace[s1][i0] = cubeFace[s4][i5];
-    cubeFace[s1][i1] = cubeFace[s4][i9];
-    cubeFace[s4][i5] = cubeFace[s3][i11];
-    cubeFace[s4][i9] = cubeFace[s3][i10];
-    cubeFace[s3][i11] = cubeFace[s2][i6];
-    cubeFace[s3][i10] = cubeFace[s2][i2];
-    cubeFace[s2][i6] = tmpv1;
-    cubeFace[s2][i2] = tmpv2;
+    tmp = cube[7+0];
+    cube[7+0] = cube[7+1];
+    cube[7+1] = cube[7+5];
+    cube[7+5] = cube[7+4];
+    cube[7+4] = tmp;
 }
-void halfBlockR(int cubeFace[6][4], int sideIdList[5], int idList[12])
+void frontR(std::vector<int> &cube)
 {
-    int s0=sideIdList[0], 
-        s1=sideIdList[1], s2=sideIdList[2],
-        s3=sideIdList[3], s4=sideIdList[4];
+    int tmp = cube[0];
+    cube[0] = cube[4];
+    cube[4] = cube[5];
+    cube[5] = cube[1];
+    cube[1] = tmp;
     
-    int i0=idList[0], i1=idList[1], i2=idList[2],
-        i3=idList[3], i4=idList[4], i5=idList[5],
-        i6=idList[6], i7=idList[7], i8=idList[8],
-        i9=idList[9], i10=idList[10], i11=idList[11];
+    rotateVec(cube[7+0],1);
+    rotateVec(cube[7+1],1);
+    rotateVec(cube[7+5],1);
+    rotateVec(cube[7+4],1);
     
-    int tmpv1 = cubeFace[s0][i3];
-    cubeFace[s0][i3] = cubeFace[s0][i7];
-    cubeFace[s0][i7] = cubeFace[s0][i8];
-    cubeFace[s0][i8] = cubeFace[s0][i4];
-    cubeFace[s0][i4] = tmpv1;
+    tmp = cube[7+0];
+    cube[7+0] = cube[7+4];
+    cube[7+4] = cube[7+5];
+    cube[7+5] = cube[7+1];
+    cube[7+1] = tmp;
+}
+void rightL(std::vector<int> &cube)
+{
+    int tmp = cube[1];
+    cube[1] = cube[2];
+    cube[2] = cube[6];
+    cube[6] = cube[5];
+    cube[5] = tmp;
     
-    tmpv1 = cubeFace[s1][i0];
-    int tmpv2 = cubeFace[s1][i1];
-    cubeFace[s1][i0] = cubeFace[s2][i6];
-    cubeFace[s1][i1] = cubeFace[s2][i2];
-    cubeFace[s2][i6] = cubeFace[s3][i11];
-    cubeFace[s2][i2] = cubeFace[s3][i10];
-    cubeFace[s3][i11] = cubeFace[s4][i5];
-    cubeFace[s3][i10] = cubeFace[s4][i9];
-    cubeFace[s4][i5] = tmpv1;
-    cubeFace[s4][i9] = tmpv2;
+    rotateVec(cube[7+1],2);
+    rotateVec(cube[7+2],2);
+    rotateVec(cube[7+6],2);
+    rotateVec(cube[7+5],2);
+    
+    tmp = cube[7+1];
+    cube[7+1] = cube[7+2];
+    cube[7+2] = cube[7+6];
+    cube[7+6] = cube[7+5];
+    cube[7+5] = tmp;
+}
+void rightR(std::vector<int> &cube)
+{
+    int tmp = cube[1];
+    cube[1] = cube[5];
+    cube[5] = cube[6];
+    cube[6] = cube[2];
+    cube[2] = tmp;
+    
+    rotateVec(cube[7+1],2);
+    rotateVec(cube[7+2],2);
+    rotateVec(cube[7+6],2);
+    rotateVec(cube[7+5],2);
+    
+    tmp = cube[7+1];
+    cube[7+1] = cube[7+5];
+    cube[7+5] = cube[7+6];
+    cube[7+6] = cube[7+2];
+    cube[7+2] = tmp;
 }
 
-void frontL(int cube[6][4])
+void topL(std::vector<int> &cube)
 {
-    int sideIdList[5] = {0,5,3,4,1};
-    int idList[12] = {2,3,0,0,1,0,2,2,3,2,2,3};
-    halfBlockL(cube,sideIdList,idList);
+    int tmp = cube[0];
+    cube[0] = cube[3];
+    cube[3] = cube[2];
+    cube[2] = cube[1];
+    cube[1] = tmp;
+    
+    rotateVec(cube[7+0],3);
+    rotateVec(cube[7+3],3);
+    rotateVec(cube[7+2],3);
+    rotateVec(cube[7+1],3);
+    
+    tmp = cube[7+0];
+    cube[7+0] = cube[7+3];
+    cube[7+3] = cube[7+2];
+    cube[7+2] = cube[7+1];
+    cube[7+1] = tmp;
 }
-void frontR(int cube[6][4])
+void topR(std::vector<int> &cube)
 {
-    int sideIdList[5] = {0,5,3,4,1};
-    int idList[12] = {2,3,0,0,1,0,2,2,3,2,2,3};
-    halfBlockR(cube,sideIdList,idList);
-}
-void rightL(int cube[6][4])
-{
-    int sideIdList[5] = {1,5,0,4,2};
-    int idList[12] = {3,1,1,0,1,1,3,2,3,3,3,1};
-    halfBlockL(cube,sideIdList,idList);
-}
-void rightR(int cube[6][4])
-{
-    int sideIdList[5] = {1,5,0,4,2};
-    int idList[12] = {3,1,1,0,1,1,3,2,3,3,3,1};
-    halfBlockR(cube,sideIdList,idList);
-}
-void topL(int cube[6][4])
-{
-    int sideIdList[5] = {5,2,3,0,1};
-    int idList[12] = {0,1,1,0,1,1,0,2,3,0,0,1};
-    halfBlockL(cube,sideIdList,idList);
-}
-void topR(int cube[6][4])
-{
-    int sideIdList[5] = {5,2,3,0,1};
-    int idList[12] = {0,1,1,0,1,1,0,2,3,0,0,1};
-    halfBlockR(cube,sideIdList,idList);
+    int tmp = cube[0];
+    cube[0] = cube[1];
+    cube[1] = cube[2];
+    cube[2] = cube[3];
+    cube[3] = tmp;
+    
+    rotateVec(cube[7+0],3);
+    rotateVec(cube[7+3],3);
+    rotateVec(cube[7+2],3);
+    rotateVec(cube[7+1],3);
+    
+    tmp = cube[7+0];
+    cube[7+0] = cube[7+1];
+    cube[7+1] = cube[7+2];
+    cube[7+2] = cube[7+3];
+    cube[7+3] = tmp;
 }

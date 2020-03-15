@@ -3,15 +3,15 @@
 
 #include <vector>
 
-//复制魔方状态
-void copyCubeState(const int cube1[6][4], int cube2[6][4]);
-
 //翻转魔方
-void frontL(int cube[6][4]);
-void frontR(int cube[6][4]);
-void rightL(int cube[6][4]);
-void rightR(int cube[6][4]);
-void topL(int cube[6][4]);
-void topR(int cube[6][4]);
+void frontL(std::vector<int> &cube);
+void frontR(std::vector<int> &cube);
+void rightL(std::vector<int> &cube);
+void rightR(std::vector<int> &cube);
+void topL(std::vector<int> &cube);
+void topR(std::vector<int> &cube);
+
+//表征二阶魔方状态的向量最小长度
+extern int g_cubeVecLen;
 
 #endif // CUBEFUNCTIONS_H

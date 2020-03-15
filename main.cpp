@@ -18,8 +18,7 @@ int main()
     vizer.getImage(1).copyTo(image_f);
     cv::imshow("MiniCube",image);
     
-    int initCube[6][4];
-    vizer.getCurrentState(initCube);
+    std::vector<int> initCube = vizer.getCurrentState();
     
     while(1){
         char key = cv::waitKey();
@@ -30,11 +29,10 @@ int main()
         else if(key == '9') vizer.vizTopL();
         else if(key == '7') vizer.vizTopR();
         else if(key == 's') {
-            int cube[6][4];
-            vizer.getCurrentState(cube);
+            std::vector<int> cube = vizer.getCurrentState();
             MiniCubeSolver solver;
-            solver.setMaxDepth(8);
-            bool isSolved = solver.solve(cube,initCube);
+            //solver.setMaxDepth(10);
+            bool isSolved = solver.singlePathSolve_recursion(cube,initCube);
             
             if(isSolved){
                 std::cout<<"success"<<std::endl;
@@ -43,16 +41,12 @@ int main()
                 std::string cmdStr = "";
                 for(int i=0;i<cmdList.size();i++){
                     int cmd = cmdList[i];
-                    
                     if(cmd == 0) cmdStr += "1 ";
-                    else if(cmd == 1) cmdStr += "1 1 ";
-                    else if(cmd == 2) cmdStr += "3 ";
-                    else if(cmd == 3) cmdStr += "4 ";
-                    else if(cmd == 4) cmdStr += "4 4 ";
-                    else if(cmd == 5) cmdStr += "6 ";
-                    else if(cmd == 6) cmdStr += "9 ";
-                    else if(cmd == 7) cmdStr += "9 9 ";
-                    else if(cmd == 8) cmdStr += "7 ";
+                    else if(cmd == 1) cmdStr += "3 ";
+                    else if(cmd == 2) cmdStr += "4 ";
+                    else if(cmd == 3) cmdStr += "6 ";
+                    else if(cmd == 4) cmdStr += "9 ";
+                    else if(cmd == 5) cmdStr += "7 ";
                 }
                 std::cout<<"command list:"<<cmdStr<<std::endl;
             }
@@ -60,7 +54,7 @@ int main()
                 std::cout<<"failed"<<std::endl;
             }
         }
-        else if(key == 'q') break;
+        else if(key == 27) break;
         
         vizer.getImage(0).copyTo(image_b);
         vizer.getImage(1).copyTo(image_f);

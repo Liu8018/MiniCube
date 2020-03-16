@@ -12,10 +12,17 @@ public:
     //设置最大搜索深度
     void setMaxDepth(int maxDepth);
     
-    //求解任意两个状态之间的转换方法，返回值是操作指令id序列
-    bool breadthFirstSolve(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2);
-    bool singlePathSolve(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2);
-    bool singlePathSolve_recursion(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2);
+    //广度优先搜索，无法确定搜索层数，且难以解决状态重复问题，
+    //bool breadthFirstSolve(const std::vector<int> &cubeState1,
+    //                       const std::vector<int> &cubeState2,
+    //                       int maxDepth, int maxNodesPerLayer,
+    //                       std::vector<int> &cmdPath);
+    //深度搜索，递归版
+    bool singlePathSolve_recursion(const std::vector<int> &cubeState1, 
+                                   const std::vector<int> &cubeState2);
+    //深度搜索，为避免栈溢出实现的非递归方案
+    bool singlePathSolve(const std::vector<int> &cubeState1, 
+                         const std::vector<int> &cubeState2);
     
     //得到指令序列
     std::vector<int> getCmdList();
@@ -27,25 +34,25 @@ private:
     //求解出的操作指令序列
     std::vector<int> m_cmdList;
     
-    //最大搜索深度
-    int m_maxDepth;
-    
     //状态向量相似度
-    float calcOverlapRatio(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2);
+    float calcOverlapRatio(const std::vector<int> &cubeState1, 
+                           const std::vector<int> &cubeState2);
     
     //从某状态生成下一级的6个状态
-    void genNext6States(const std::vector<int> &cube, std::vector<std::vector<int>> &nextStates);
+    void genNext6States(const std::vector<int> &cube, 
+                        std::vector<std::vector<int>> &nextStates);
     
     //按与目标状态的重合率排序，最大重合率为1时返回true
     bool sortStatesByOverlapRatio(const std::vector<int> &targetState, 
-                                  std::vector<std::vector<int>> &states, std::vector<int> &cmdIds);
+                                  std::vector<std::vector<int>> &states, 
+                                  std::vector<int> &cmdIds);
     
-    //
+    //为防止状态重复用了map
     std::map<std::string,int> m_blackListStates;
     int m_hashCode;
     std::string getCubeStateStr(const std::vector<int> &cube);
     
-    //singlePathSolve用到的
+    //深度搜索的非递归方案用到的函数和变量
     std::vector<std::vector<int>> m_curStates;
     std::vector<int> m_curCmdIds;
     int m_curStateId;
@@ -54,6 +61,10 @@ private:
     std::vector<std::vector<std::vector<int>>> m_stateStack;
     std::vector<std::vector<int>> m_cmdIdsStack;
     std::vector<int> m_stateIdStack;
+    
+    //优化深度搜索的结果
+    void optimizePath(const std::vector<std::vector<int>> &statePath,
+                      std::vector<int> &cmdPath);
 };
 
 #endif // MINICUBESOLVER_H

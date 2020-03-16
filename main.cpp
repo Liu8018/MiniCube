@@ -31,8 +31,7 @@ int main()
         else if(key == 's') {
             std::vector<int> cube = vizer.getCurrentState();
             MiniCubeSolver solver;
-            //solver.setMaxDepth(10);
-            bool isSolved = solver.singlePathSolve_recursion(cube,initCube);
+            bool isSolved = solver.singlePathSolve(cube,initCube);
             
             if(isSolved){
                 std::cout<<"success"<<std::endl;

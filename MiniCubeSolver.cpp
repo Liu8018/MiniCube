@@ -12,11 +12,6 @@ MiniCubeSolver::MiniCubeSolver()
     m_hashCode = 472917414;
 }
 
-void MiniCubeSolver::setMaxDepth(int maxDepth)
-{
-    m_maxDepth = maxDepth;
-}
-
 float MiniCubeSolver::calcOverlapRatio(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2)
 {
     int ncorrect = 0;
@@ -45,10 +40,74 @@ std::string MiniCubeSolver::getCubeStateStr(const std::vector<int> &cube)
     return str;
 }
 
+/*
+bool MiniCubeSolver::breadthFirstSolve(const std::vector<int> &cubeState1, 
+                                       const std::vector<int> &cubeState2, 
+                                       int maxDepth, int maxNodesPerLayer,
+                                       std::vector<int> &cmdPath)
+{
+    //初始状态集
+    std::vector<std::vector<int>> states;
+    states.push_back(cubeState1);
+    
+    //搜索次数
+    int searchStep = 0;
+    
+    //目标状态所在层数
+    int targetLayer = 0;
+    
+    bool isSolved = false;
+    while (1) {
+        //若达到最大深度，搜索次数加一，层数清零，状态置零
+        if(targetLayer > maxDepth){
+            searchStep ++;
+            targetLayer = 0;
+            
+            states.clear();
+            states.push_back(cubeState1);
+        }
+        
+        std::vector<std::vector<int>> nextStates;
+        
+        //由states生成nextStates
+        for(int i=0;i<states.size();i++){
+            std::vector<std::vector<int>> tmpStates;
+            genNext6States(states[i],tmpStates);
+            nextStates.insert(nextStates.end(),tmpStates.begin(),tmpStates.end());
+        }
+        
+        //排序
+        std::vector<int> cmdIds(nextStates.size());
+        bool overlap = sortStatesByOverlapRatio(cubeState2,nextStates,cmdIds);
+        if(overlap){
+            isSolved = true;
+            break;
+        }
+        
+        //选出第searchStep*maxNodesPerLayer到第(searchStep+1)*maxNodesPerLayer的状态
+        int startPos = searchStep*maxNodesPerLayer;
+        int endPos = (searchStep+1)*maxNodesPerLayer;
+        
+        if(startPos > nextStates.size()){
+            startPos = 0;
+            endPos = nextStates.size();
+        }
+        else if(endPos > nextStates.size()){
+            
+        }
+        
+        states.assign(nextStates.begin()+startPos,nextStates.begin()+endPos);
+        
+        targetLayer++;
+    }
+    
+    //根据searchStep和targetLayer可以推算出整个过程的cmdPath
+    
+}
+*/
+
 bool MiniCubeSolver::singlePathSolve_recursion(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2)
 {
-    //状态重复的问题；堆栈溢出的问题
-    
     if(m_blackListStates[getCubeStateStr(cubeState1)] == m_hashCode)
         return false;
     
@@ -166,6 +225,8 @@ void MiniCubeSolver::pushStack()
 
 bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2)
 {
+    m_blackListStates.clear();
+    
     //初始状态
     m_curStates.push_back(cubeState1);
     m_curCmdIds.push_back(-1);
@@ -216,8 +277,34 @@ bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const s
     }
     
     for(int i=0;i<m_stateIdStack.size();i++){
+        //3个相同方向变为一个反方向
+        if(m_cmdList.size() >= 2){
+            int a = m_cmdList[m_cmdList.size()-2];
+            int b = m_cmdList[m_cmdList.size()-1];
+            int c = m_cmdIdsStack[i][m_stateIdStack[i]];
+            if(a==b && b==c){
+                m_cmdList.pop_back();
+                m_cmdList.pop_back();
+                
+                if(a==0) m_cmdList.push_back(1);
+                else if(a==1) m_cmdList.push_back(0);
+                else if(a==2) m_cmdList.push_back(3);
+                else if(a==3) m_cmdList.push_back(2);
+                else if(a==4) m_cmdList.push_back(5);
+                else if(a==5) m_cmdList.push_back(4);
+                
+                continue;
+            }
+        }
+        
         m_cmdList.push_back(m_cmdIdsStack[i][m_stateIdStack[i]]);
     }
     
     return isSolved;
+}
+
+void MiniCubeSolver::optimizePath(const std::vector<std::vector<int>> &statePath, 
+                                  std::vector<int> &cmdPath)
+{
+    
 }

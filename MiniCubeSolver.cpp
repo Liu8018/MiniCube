@@ -40,80 +40,15 @@ std::string MiniCubeSolver::getCubeStateStr(const std::vector<int> &cube)
     return str;
 }
 
-/*
-bool MiniCubeSolver::breadthFirstSolve(const std::vector<int> &cubeState1, 
-                                       const std::vector<int> &cubeState2, 
-                                       int maxDepth, int maxNodesPerLayer,
-                                       std::vector<int> &cmdPath)
-{
-    //初始状态集
-    std::vector<std::vector<int>> states;
-    states.push_back(cubeState1);
-    
-    //搜索次数
-    int searchStep = 0;
-    
-    //目标状态所在层数
-    int targetLayer = 0;
-    
-    bool isSolved = false;
-    while (1) {
-        //若达到最大深度，搜索次数加一，层数清零，状态置零
-        if(targetLayer > maxDepth){
-            searchStep ++;
-            targetLayer = 0;
-            
-            states.clear();
-            states.push_back(cubeState1);
-        }
-        
-        std::vector<std::vector<int>> nextStates;
-        
-        //由states生成nextStates
-        for(int i=0;i<states.size();i++){
-            std::vector<std::vector<int>> tmpStates;
-            genNext6States(states[i],tmpStates);
-            nextStates.insert(nextStates.end(),tmpStates.begin(),tmpStates.end());
-        }
-        
-        //排序
-        std::vector<int> cmdIds(nextStates.size());
-        bool overlap = sortStatesByOverlapRatio(cubeState2,nextStates,cmdIds);
-        if(overlap){
-            isSolved = true;
-            break;
-        }
-        
-        //选出第searchStep*maxNodesPerLayer到第(searchStep+1)*maxNodesPerLayer的状态
-        int startPos = searchStep*maxNodesPerLayer;
-        int endPos = (searchStep+1)*maxNodesPerLayer;
-        
-        if(startPos > nextStates.size()){
-            startPos = 0;
-            endPos = nextStates.size();
-        }
-        else if(endPos > nextStates.size()){
-            
-        }
-        
-        states.assign(nextStates.begin()+startPos,nextStates.begin()+endPos);
-        
-        targetLayer++;
-    }
-    
-    //根据searchStep和targetLayer可以推算出整个过程的cmdPath
-    
-}
-*/
-
-bool MiniCubeSolver::singlePathSolve_recursion(const std::vector<int> &cubeState1, 
+bool MiniCubeSolver::depthFirstSolve_recursion(const std::vector<int> &cubeState1, 
                                                const std::vector<int> &cubeState2, 
                                                int maxDepth)
 {
     if(m_blackListStates[getCubeStateStr(cubeState1)] == m_hashCode)
         return false;
     
-    m_blackListStates[getCubeStateStr(cubeState1)] = m_hashCode;
+    if(m_cmdList.size() > maxDepth)
+        return false;
     
     std::vector<std::vector<int>> nextStates;
     genNext6States(cubeState1,nextStates);
@@ -129,11 +64,13 @@ bool MiniCubeSolver::singlePathSolve_recursion(const std::vector<int> &cubeState
         return true;
     }
     
+    m_blackListStates[getCubeStateStr(cubeState1)] = m_hashCode;
+    
     for(int i=0;i<nextStates.size();i++){
         m_cmdList.push_back(cmdIds[i]);
         
         //对该状态进行递归
-        bool isSolved = singlePathSolve_recursion(nextStates[i],cubeState2);
+        bool isSolved = depthFirstSolve_recursion(nextStates[i],cubeState2,maxDepth);
         
         //若此分支下存在解，返回true
         if(isSolved) {
@@ -143,6 +80,8 @@ bool MiniCubeSolver::singlePathSolve_recursion(const std::vector<int> &cubeState
         //若此分支没有成功求解，删除刚刚添加的指令
         m_cmdList.pop_back();
     }
+    
+    m_blackListStates[getCubeStateStr(cubeState1)] = 0;
     
     return false;
 }
@@ -316,9 +255,9 @@ bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const s
     //    std::cout<<"\n";
     //}
     
-    std::cout<<"before:"<<m_cmdList.size()<<std::endl;
-    optimizePath(statePath,m_cmdList);
-    std::cout<<"after:"<<m_cmdList.size()<<std::endl;
+    //std::cout<<"before:"<<m_cmdList.size()<<std::endl;
+    //optimizePath(statePath,m_cmdList);
+    //std::cout<<"after:"<<m_cmdList.size()<<std::endl;
     
     return isSolved;
 }

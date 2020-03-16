@@ -31,7 +31,7 @@ int main()
         else if(key == 's') {
             std::vector<int> cube = vizer.getCurrentState();
             MiniCubeSolver solver;
-            bool isSolved = solver.singlePathSolve(cube,initCube);
+            bool isSolved = solver.depthFirstSolve_recursion(cube,initCube,13);
             
             if(isSolved){
                 std::cout<<"success"<<std::endl;
@@ -47,7 +47,7 @@ int main()
                     else if(cmd == 4) cmdStr += "9 ";
                     else if(cmd == 5) cmdStr += "7 ";
                 }
-                //std::cout<<"command list:"<<cmdStr<<std::endl;
+                std::cout<<"command list:"<<cmdStr<<std::endl;
             }
             else{
                 std::cout<<"failed"<<std::endl;

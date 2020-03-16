@@ -12,15 +12,11 @@ public:
     //设置最大搜索深度
     void setMaxDepth(int maxDepth);
     
-    //广度优先搜索，无法确定搜索层数，且难以解决状态重复问题，
-    //bool breadthFirstSolve(const std::vector<int> &cubeState1,
-    //                       const std::vector<int> &cubeState2,
-    //                       int maxDepth, int maxNodesPerLayer,
-    //                       std::vector<int> &cmdPath);
-    //深度搜索，递归版
-    bool singlePathSolve_recursion(const std::vector<int> &cubeState1, 
-                                   const std::vector<int> &cubeState2);
-    //深度搜索，为避免栈溢出实现的非递归方案
+    //深度优先搜索，递归版，限制深度
+    bool depthFirstSolve_recursion(const std::vector<int> &cubeState1, 
+                                   const std::vector<int> &cubeState2,
+                                   int maxDepth);
+    //深度搜索，为避免栈溢出实现的非递归方案，不限制深度，一秒求解任意状态
     bool singlePathSolve(const std::vector<int> &cubeState1, 
                          const std::vector<int> &cubeState2);
     
@@ -62,7 +58,7 @@ private:
     std::vector<std::vector<int>> m_cmdIdsStack;
     std::vector<int> m_stateIdStack;
     
-    //优化深度搜索的结果
+    //优化不限制深度搜索的结果(未完成)
     void optimizePath(std::vector<std::vector<int> > &statePath,
                       std::vector<int> &cmdPath);
 };

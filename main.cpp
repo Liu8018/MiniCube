@@ -47,7 +47,7 @@ int main()
                     else if(cmd == 4) cmdStr += "9 ";
                     else if(cmd == 5) cmdStr += "7 ";
                 }
-                std::cout<<"command list:"<<cmdStr<<std::endl;
+                //std::cout<<"command list:"<<cmdStr<<std::endl;
             }
             else{
                 std::cout<<"failed"<<std::endl;

@@ -63,7 +63,7 @@ private:
     std::vector<int> m_stateIdStack;
     
     //优化深度搜索的结果
-    void optimizePath(const std::vector<std::vector<int>> &statePath,
+    void optimizePath(std::vector<std::vector<int> > &statePath,
                       std::vector<int> &cmdPath);
 };
 

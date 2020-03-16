@@ -106,7 +106,9 @@ bool MiniCubeSolver::breadthFirstSolve(const std::vector<int> &cubeState1,
 }
 */
 
-bool MiniCubeSolver::singlePathSolve_recursion(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2)
+bool MiniCubeSolver::singlePathSolve_recursion(const std::vector<int> &cubeState1, 
+                                               const std::vector<int> &cubeState2, 
+                                               int maxDepth)
 {
     if(m_blackListStates[getCubeStateStr(cubeState1)] == m_hashCode)
         return false;
@@ -276,6 +278,8 @@ bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const s
         }
     }
     
+    //状态路径简化
+    std::vector<std::vector<int>> statePath;
     for(int i=0;i<m_stateIdStack.size();i++){
         //3个相同方向变为一个反方向
         if(m_cmdList.size() >= 2){
@@ -285,6 +289,8 @@ bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const s
             if(a==b && b==c){
                 m_cmdList.pop_back();
                 m_cmdList.pop_back();
+                statePath.pop_back();
+                statePath.pop_back();
                 
                 if(a==0) m_cmdList.push_back(1);
                 else if(a==1) m_cmdList.push_back(0);
@@ -293,18 +299,100 @@ bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const s
                 else if(a==4) m_cmdList.push_back(5);
                 else if(a==5) m_cmdList.push_back(4);
                 
+                statePath.push_back(m_stateStack[i][m_stateIdStack[i]]);
+                
                 continue;
             }
         }
         
         m_cmdList.push_back(m_cmdIdsStack[i][m_stateIdStack[i]]);
+        statePath.push_back(m_stateStack[i][m_stateIdStack[i]]);
     }
+    
+    //test
+    //for(int i=0;i<statePath.size();i++){
+    //    for(int j=0;j<statePath[i].size();j++)
+    //        std::cout<<statePath[i][j]<<",";
+    //    std::cout<<"\n";
+    //}
+    
+    std::cout<<"before:"<<m_cmdList.size()<<std::endl;
+    optimizePath(statePath,m_cmdList);
+    std::cout<<"after:"<<m_cmdList.size()<<std::endl;
     
     return isSolved;
 }
 
-void MiniCubeSolver::optimizePath(const std::vector<std::vector<int>> &statePath, 
+void MiniCubeSolver::optimizePath(std::vector<std::vector<int>> &statePath, 
                                   std::vector<int> &cmdPath)
 {
+    int tryDepth = 3;
+    int optimizeTimes = 9999;
     
+    //所有状态加入map
+    std::map<std::string,bool> blackList;
+    for(int i=0;i<statePath.size();i++)
+        blackList[getCubeStateStr(statePath[i])] = m_hashCode;
+    
+    std::vector<std::vector<int>> newStatePath;
+    
+    for(int i=0;i<statePath.size()-tryDepth;i++){
+        //std::cout<<"t1"<<std::endl;
+        
+        //此状态及后tryDepth个状态移出map
+        for(int j=0;j<tryDepth+1;j++){
+            blackList[getCubeStateStr(statePath[i+j])] = 0;
+        }
+        
+        //std::cout<<"t2"<<std::endl;
+        
+        //从statePath[i]出发搜索tryDepth层内的所有状态，若有跟后续状态重合的则直接连接
+        std::vector<std::vector<int>> tmpStates;
+        tmpStates.push_back(statePath[i]);
+        for(int t=0;t<tryDepth;t++){
+            std::vector<std::vector<int>> nextStates;
+            for(int t1=0;t1<tmpStates.size();t1++){
+                std::vector<std::vector<int>> next6States;
+                genNext6States(tmpStates[t1],next6States);
+                nextStates.insert(nextStates.end(),next6States.begin(),next6States.end());
+            }
+            tmpStates.assign(nextStates.begin(),nextStates.end());
+        }
+        
+        //std::cout<<"t3"<<std::endl;
+        
+        std::map<std::string,bool> sameStateStrMap;
+        for(int t=0;t<tmpStates.size();t++){
+            std::string stateStr = getCubeStateStr(tmpStates[t]);
+            if( blackList[stateStr] == m_hashCode ){
+                std::cout<<"???"<<std::endl;
+                sameStateStrMap[stateStr] = true;
+            }
+        }
+        
+        //std::cout<<"t4"<<std::endl;
+        
+        if(sameStateStrMap.empty())
+            continue;
+        
+        int nearestStateId = i+1;
+        for(int t=i;t<statePath.size();t++){
+            std::string stateStr = getCubeStateStr(statePath[t]);
+            if(blackList[stateStr] == m_hashCode && 
+               sameStateStrMap[stateStr] == true){
+                nearestStateId = t;
+                break;
+            }
+        }
+        
+        //std::cout<<"t5"<<std::endl;
+        
+        //连接i到nearestId
+        std::cout<<"-------before:"<<statePath.size()<<std::endl;
+        statePath.erase(statePath.begin()+i+1,statePath.begin()+nearestStateId);
+        std::cout<<"-------after:"<<statePath.size()<<std::endl;
+        cmdPath.erase(cmdPath.begin()+i+1,cmdPath.begin()+nearestStateId);
+        
+        //std::cout<<"t6"<<std::endl;
+    }
 }

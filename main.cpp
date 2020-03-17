@@ -46,6 +46,8 @@ int main()
                                    vizer_dstCube.getImage(0),vizer_dstCube.getImage(1));
     cv::imshow("MiniCube",mainView);
     
+    int method = 1;
+    
     while(1){
         char key = cv::waitKey();
         if(key == '1') vizer_srcCube.vizFrontL();
@@ -61,15 +63,20 @@ int main()
         else if(key == 'w') vizer_dstCube.vizTopL();
         else if(key == 'q') vizer_dstCube.vizTopR();
         else if(key == ' ') {
+            std::cout<<"Searching..."<<std::endl;
+            
             std::vector<int> srcCube = vizer_srcCube.getCurrentState();
             std::vector<int> dstCube = vizer_dstCube.getCurrentState();
             
             MiniCubeSolver solver;
-            bool isSolved = solver.depthFirstSolve_multiThread(srcCube,dstCube,13);
-            //bool isSolved = solver.singlePathSolve(srcCube,dstCube);
+            bool isSolved;
+            if(method)
+                isSolved = solver.depthFirstSolve_multiThread(srcCube,dstCube,13);
+            else
+                isSolved = solver.singlePathSolve(srcCube,dstCube);
             
             if(isSolved){
-                std::cout<<"success"<<std::endl;
+                std::cout<<"Success"<<std::endl;
                 
                 std::vector<int> cmdList = solver.getCmdList();
                 std::string cmdStr = "";
@@ -85,8 +92,15 @@ int main()
                 std::cout<<"command list:"<<cmdStr<<std::endl;
             }
             else{
-                std::cout<<"failed"<<std::endl;
+                std::cout<<"Failed"<<std::endl;
             }
+        }
+        else if(key == 't'){
+            method = !method;
+            if(method == 1)
+                std::cout<<"现在使用 深度优先搜索+限制深度 方法"<<std::endl;
+            else
+                std::cout<<"现在使用 深度优先搜索+不限深度 方法"<<std::endl;
         }
         else if(key == 27) break;
         

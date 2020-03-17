@@ -47,6 +47,7 @@ int main()
     cv::imshow("MiniCube",mainView);
     
     int method = 1;
+    std::cout<<"现在使用 深度优先搜索+限制深度 方法"<<std::endl;
     
     while(1){
         char key = cv::waitKey();

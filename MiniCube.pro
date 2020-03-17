@@ -16,3 +16,4 @@ HEADERS += \
 
 INCLUDEPATH += /home/liu/libraries/opencv345/include
 LIBS += -L/home/liu/libraries/opencv345/lib -lopencv_core -lopencv_highgui -lopencv_imgproc
+LIBS += -lpthread

@@ -1,30 +1,50 @@
 #include <iostream>
 #include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "MiniCubeVisualizer.h"
 #include "MiniCubeSolver.h"
 #include "MiniCubeFunctions.h"
+
+cv::Mat getMainView(cv::Mat srcImage_b, cv::Mat srcImage_f,
+                    cv::Mat dstImage_b, cv::Mat dstImage_f)
+{
+    int leftSpaceCols = 300;
+    cv::Mat canvas(900,1000+leftSpaceCols,CV_8UC3);
+    canvas = cv::Scalar(255,255,255);
+    
+    srcImage_b.copyTo(canvas(cv::Range(0,500),cv::Range(leftSpaceCols,leftSpaceCols+500)));
+    srcImage_f.copyTo(canvas(cv::Range(0,500),cv::Range(leftSpaceCols+500,canvas.cols)));
+    dstImage_b.copyTo(canvas(cv::Range(400,900),cv::Range(leftSpaceCols,leftSpaceCols+500)));
+    dstImage_f.copyTo(canvas(cv::Range(400,900),cv::Range(leftSpaceCols+500,canvas.cols)));
+    
+    cv::line(canvas,cv::Point(0,canvas.rows/2),cv::Point(canvas.cols,canvas.rows/2),cv::Scalar(0,0,0),2);
+    cv::line(canvas,cv::Point(canvas.cols-500,0),cv::Point(canvas.cols-500,canvas.rows),cv::Scalar(0,0,0),2);
+    cv::line(canvas,cv::Point(leftSpaceCols,0),cv::Point(leftSpaceCols,canvas.rows),cv::Scalar(0,0,0),2);
+    cv::line(canvas,cv::Point(0,50),cv::Point(canvas.cols,50),cv::Scalar(0,0,0),2);
+    
+    cv::putText(canvas,"Initial State:",cv::Point(30,250),3,1.1,cv::Scalar(0,0,0),2);
+    cv::putText(canvas,"Target State:",cv::Point(30,650),3,1.1,cv::Scalar(0,0,0),2);
+    
+    cv::putText(canvas,"Back",cv::Point(505,40),3,1.1,cv::Scalar(0,0,0),2);
+    cv::putText(canvas,"Front",cv::Point(1000,40),3,1.1,cv::Scalar(0,0,0),2);
+    
+    canvas = canvas.rowRange(0,850);
+    
+    float resizeRatio = 600/float(canvas.rows);
+    cv::resize(canvas,canvas,cv::Size(),resizeRatio,resizeRatio);
+    
+    return canvas;
+}
 
 int main()
 {
     MiniCubeVisualizer vizer_srcCube;
     MiniCubeVisualizer vizer_dstCube;
     
-    cv::Mat srcImage(500,1000,CV_8UC3);
-    srcImage = cv::Scalar(255,255,255);
-    cv::Mat srcImage_b = srcImage.colRange(0,500);
-    cv::Mat srcImage_f = srcImage.colRange(500,1000);
-    vizer_srcCube.getImage(0).copyTo(srcImage_b);
-    vizer_srcCube.getImage(1).copyTo(srcImage_f);
-    cv::imshow("init state",srcImage);
-    
-    cv::Mat dstImage(500,1000,CV_8UC3);
-    dstImage = cv::Scalar(255,255,255);
-    cv::Mat dstImage_b = dstImage.colRange(0,500);
-    cv::Mat dstImage_f = dstImage.colRange(500,1000);
-    vizer_dstCube.getImage(0).copyTo(dstImage_b);
-    vizer_dstCube.getImage(1).copyTo(dstImage_f);
-    cv::imshow("target state",dstImage);
+    cv::Mat mainView = getMainView(vizer_srcCube.getImage(0),vizer_srcCube.getImage(1),
+                                   vizer_dstCube.getImage(0),vizer_dstCube.getImage(1));
+    cv::imshow("MiniCube",mainView);
     
     while(1){
         char key = cv::waitKey();
@@ -45,7 +65,8 @@ int main()
             std::vector<int> dstCube = vizer_dstCube.getCurrentState();
             
             MiniCubeSolver solver;
-            bool isSolved = solver.depthFirstSolve_recursion(srcCube,dstCube,13);
+            bool isSolved = solver.depthFirstSolve_multiThread(srcCube,dstCube,13);
+            //bool isSolved = solver.singlePathSolve(srcCube,dstCube);
             
             if(isSolved){
                 std::cout<<"success"<<std::endl;
@@ -69,13 +90,9 @@ int main()
         }
         else if(key == 27) break;
         
-        vizer_srcCube.getImage(0).copyTo(srcImage_b);
-        vizer_srcCube.getImage(1).copyTo(srcImage_f);
-        cv::imshow("init state",srcImage);
-        
-        vizer_dstCube.getImage(0).copyTo(dstImage_b);
-        vizer_dstCube.getImage(1).copyTo(dstImage_f);
-        cv::imshow("target state",dstImage);
+        cv::Mat mainView = getMainView(vizer_srcCube.getImage(0),vizer_srcCube.getImage(1),
+                                       vizer_dstCube.getImage(0),vizer_dstCube.getImage(1));
+        cv::imshow("MiniCube",mainView);
     }
     
     return 0;

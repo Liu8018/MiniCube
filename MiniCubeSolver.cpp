@@ -3,13 +3,12 @@
 
 #include <iostream>
 #include <random>
+#include <future>
 #include <opencv2/highgui.hpp>
 
 MiniCubeSolver::MiniCubeSolver()
 {
     m_cubeVecLen = g_cubeVecLen;
-    
-    m_hashCode = 472917414;
 }
 
 float MiniCubeSolver::calcOverlapRatio(const std::vector<int> &cubeState1, const std::vector<int> &cubeState2)
@@ -44,7 +43,7 @@ bool MiniCubeSolver::depthFirstSolve_recursion(const std::vector<int> &cubeState
                                                const std::vector<int> &cubeState2, 
                                                int maxDepth)
 {
-    if(m_blackListStates[getCubeStateStr(cubeState1)] == m_hashCode)
+    if(m_blackListStates[getCubeStateStr(cubeState1)] == true)
         return false;
     
     if(m_cmdList.size() > maxDepth)
@@ -64,7 +63,7 @@ bool MiniCubeSolver::depthFirstSolve_recursion(const std::vector<int> &cubeState
         return true;
     }
     
-    m_blackListStates[getCubeStateStr(cubeState1)] = m_hashCode;
+    m_blackListStates[getCubeStateStr(cubeState1)] = true;
     
     for(int i=0;i<nextStates.size();i++){
         m_cmdList.push_back(cmdIds[i]);
@@ -84,6 +83,244 @@ bool MiniCubeSolver::depthFirstSolve_recursion(const std::vector<int> &cubeState
     m_blackListStates[getCubeStateStr(cubeState1)] = 0;
     
     return false;
+}
+
+void pushStack_thread(std::vector<std::vector<int>> &curStates,
+                      std::vector<int> &curCmdIds,
+                      int &curStateId,
+                      std::vector<std::vector<std::vector<int>>> &stateStack,
+                      std::vector<std::vector<int>> &cmdIdsStack,
+                      std::vector<int> &stateIdStack)
+{
+    stateStack.push_back(curStates);
+    cmdIdsStack.push_back(curCmdIds);
+    stateIdStack.push_back(curStateId);
+}
+
+void backStack_thread(std::vector<std::vector<int>> &curStates,
+                      std::vector<int> &curCmdIds,
+                      int &curStateId,
+                      std::vector<std::vector<std::vector<int>>> &stateStack,
+                      std::vector<std::vector<int>> &cmdIdsStack,
+                      std::vector<int> &stateIdStack)
+{
+    stateStack.pop_back();
+    cmdIdsStack.pop_back();
+    stateIdStack.pop_back();
+    
+    curStates = stateStack[stateStack.size()-1];
+    curCmdIds = cmdIdsStack[cmdIdsStack.size()-1];
+    curStateId = stateIdStack[stateIdStack.size()-1];
+}
+
+bool MiniCubeSolver::depthFirstSolve_thread(const std::vector<int> &cubeState1, 
+                                            const std::vector<int> &cubeState2, 
+                                            int maxDepth,
+                                            std::map<std::string,bool> &blackList,
+                                            std::vector<int> &cmdPath)
+{
+    std::vector<std::vector<int>> curStates;
+    std::vector<int> curCmdIds;
+    int curStateId;
+    std::vector<std::vector<std::vector<int>>> stateStack;
+    std::vector<std::vector<int>> cmdIdsStack;
+    std::vector<int> stateIdStack;
+    curStates.push_back(cubeState1);
+    curCmdIds.push_back(-1);
+    curStateId = 0;
+    pushStack_thread(curStates,curCmdIds,curStateId,stateStack,cmdIdsStack,stateIdStack);
+    
+    bool isSolved = false;
+    
+    while(1){
+        m_mutexLock.lock();
+        bool isSolved_multiThread = m_isSolved_multiThread;
+        m_mutexLock.unlock();
+        if(isSolved_multiThread)
+            return false;
+        
+        if(stateStack.size() > maxDepth){
+            do{
+                backStack_thread(curStates,curCmdIds,curStateId,stateStack,cmdIdsStack,stateIdStack);
+                blackList[getCubeStateStr(curStates[curStateId])] = 0;
+            }while(curStateId == curStates.size()-1);
+            curStateId++;
+            stateIdStack[stateIdStack.size()-1]++;
+        }
+        
+        if(blackList[getCubeStateStr(curStates[curStateId])] == true){
+            if(curStateId < curStates.size()-1){
+                curStateId++;
+                stateIdStack[stateIdStack.size()-1]++;
+            }
+            else{
+                do{
+                    backStack_thread(curStates,curCmdIds,curStateId,stateStack,cmdIdsStack,stateIdStack);
+                    blackList[getCubeStateStr(curStates[curStateId])] = 0;
+                    if(stateStack.empty())
+                        return false;
+                }while(curStateId == curStates.size()-1);
+                curStateId++;
+                stateIdStack[stateIdStack.size()-1]++;
+            }
+            
+            continue;
+        }
+        
+        blackList[getCubeStateStr(curStates[curStateId])] = true;
+        
+        std::vector<std::vector<int>> nextStates;
+        genNext6States(curStates[curStateId],nextStates);
+        
+        //指令id列表
+        std::vector<int> cmdIds(6);
+        for(int i=0;i<6;i++) 
+            cmdIds[i]=i;
+        
+        bool overlap = sortStatesByOverlapRatio(cubeState2,nextStates,cmdIds);
+        
+        curStates = nextStates;
+        curCmdIds = cmdIds;
+        curStateId = 0;
+        pushStack_thread(curStates,curCmdIds,curStateId,stateStack,cmdIdsStack,stateIdStack);
+        
+        if(overlap){
+            isSolved = true;
+            m_mutexLock.lock();
+            m_isSolved_multiThread = true;
+            m_mutexLock.unlock();
+            break;
+        }
+    }
+    
+    if(isSolved){
+        for(int i=0;i<stateIdStack.size();i++){
+            //3个相同方向变为一个反方向
+            if(cmdPath.size() >= 2){
+                int a = cmdPath[cmdPath.size()-2];
+                int b = cmdPath[cmdPath.size()-1];
+                int c = cmdIdsStack[i][stateIdStack[i]];
+                if(a==b && b==c){
+                    cmdPath.pop_back();
+                    cmdPath.pop_back();
+                    
+                    if(a==0) cmdPath.push_back(1);
+                    else if(a==1) cmdPath.push_back(0);
+                    else if(a==2) cmdPath.push_back(3);
+                    else if(a==3) cmdPath.push_back(2);
+                    else if(a==4) cmdPath.push_back(5);
+                    else if(a==5) cmdPath.push_back(4);
+                    
+                    continue;
+                }
+            }
+            cmdPath.push_back(cmdIdsStack[i][stateIdStack[i]]);
+        }
+    }
+    
+    return isSolved;
+} 
+
+bool MiniCubeSolver::depthFirstSolve_multiThread(const std::vector<int> &cubeState1, 
+                                                 const std::vector<int> &cubeState2, int maxDepth)
+{
+    //由cubeState1生成下一级的6种状态
+    std::vector<std::vector<int>> nextStates;
+    genNext6States(cubeState1,nextStates);
+    
+    std::vector<int> cmdIds(6);
+    for(int i=0;i<6;i++) 
+        cmdIds[i]=i;
+    
+    bool isSolved = sortStatesByOverlapRatio(cubeState2,nextStates,cmdIds);
+    if(isSolved){
+        m_cmdList.push_back(cmdIds[0]);
+        return true;
+    }
+    
+    m_blackListStates[getCubeStateStr(cubeState1)] = true;
+    
+    //开6线程同时从6个状态出发进行搜索
+    maxDepth--;
+    m_isSolved_multiThread = false;
+    
+    {
+        std::future<void> ft0 = async(std::launch::async, [&]{
+            std::map<std::string,bool> blackList;
+            std::vector<int> cmdPath;
+            bool isSolved = depthFirstSolve_thread(nextStates[0],cubeState2,maxDepth,blackList,cmdPath);
+            if(isSolved){
+                m_mutexLock.lock();
+                m_cmdList.clear();
+                m_cmdList.push_back(cmdIds[0]);
+                m_cmdList.insert(m_cmdList.end(),cmdPath.begin(),cmdPath.end());
+                m_mutexLock.unlock();
+            }
+        });
+        std::future<void> ft1 = async(std::launch::async, [&]{
+            std::map<std::string,bool> blackList;
+            std::vector<int> cmdPath;
+            bool isSolved = depthFirstSolve_thread(nextStates[1],cubeState2,maxDepth,blackList,cmdPath);
+            if(isSolved){
+                m_mutexLock.lock();
+                m_cmdList.clear();
+                m_cmdList.push_back(cmdIds[1]);
+                m_cmdList.insert(m_cmdList.end(),cmdPath.begin(),cmdPath.end());
+                m_mutexLock.unlock();
+            }
+        });
+        std::future<void> ft2 = async(std::launch::async, [&]{
+            std::map<std::string,bool> blackList;
+            std::vector<int> cmdPath;
+            bool isSolved = depthFirstSolve_thread(nextStates[2],cubeState2,maxDepth,blackList,cmdPath);
+            if(isSolved){
+                m_mutexLock.lock();
+                m_cmdList.clear();
+                m_cmdList.push_back(cmdIds[2]);
+                m_cmdList.insert(m_cmdList.end(),cmdPath.begin(),cmdPath.end());
+                m_mutexLock.unlock();
+            }
+        });
+        std::future<void> ft3 = async(std::launch::async, [&]{
+            std::map<std::string,bool> blackList;
+            std::vector<int> cmdPath;
+            bool isSolved = depthFirstSolve_thread(nextStates[3],cubeState2,maxDepth,blackList,cmdPath);
+            if(isSolved){
+                m_mutexLock.lock();
+                m_cmdList.clear();
+                m_cmdList.push_back(cmdIds[3]);
+                m_cmdList.insert(m_cmdList.end(),cmdPath.begin(),cmdPath.end());
+                m_mutexLock.unlock();
+            }
+        });
+        std::future<void> ft4 = async(std::launch::async, [&]{
+            std::map<std::string,bool> blackList;
+            std::vector<int> cmdPath;
+            bool isSolved = depthFirstSolve_thread(nextStates[4],cubeState2,maxDepth,blackList,cmdPath);
+            if(isSolved){
+                m_mutexLock.lock();
+                m_cmdList.clear();
+                m_cmdList.push_back(cmdIds[4]);
+                m_cmdList.insert(m_cmdList.end(),cmdPath.begin(),cmdPath.end());
+                m_mutexLock.unlock();
+            }
+        });
+        std::future<void> ft5 = async(std::launch::async, [&]{
+            std::map<std::string,bool> blackList;
+            std::vector<int> cmdPath;
+            bool isSolved = depthFirstSolve_thread(nextStates[5],cubeState2,maxDepth,blackList,cmdPath);
+            if(isSolved){
+                m_mutexLock.lock();
+                m_cmdList.clear();
+                m_cmdList.push_back(cmdIds[5]);
+                m_cmdList.insert(m_cmdList.end(),cmdPath.begin(),cmdPath.end());
+                m_mutexLock.unlock();
+            }
+        });
+    }
+    
+    if(m_isSolved_multiThread)
+        return true;
 }
 
 void MiniCubeSolver::genNext6States(const std::vector<int> &cube, std::vector<std::vector<int>> &nextStates)
@@ -178,7 +415,7 @@ bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const s
     bool isSolved = false;
     
     while(maxDepth--){
-        if(m_blackListStates[getCubeStateStr(m_curStates[m_curStateId])] == m_hashCode){
+        if(m_blackListStates[getCubeStateStr(m_curStates[m_curStateId])] == true){
             if(m_curStateId < m_curStates.size()-1){
                 m_curStateId++;
                 m_stateIdStack[m_stateIdStack.size()-1]++;
@@ -186,7 +423,6 @@ bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const s
             else{
                 do{backStack();}
                 while(m_curStateId == m_curStates.size()-1);
-                backStack();
                 m_curStateId++;
                 m_stateIdStack[m_stateIdStack.size()-1]++;
             }
@@ -194,7 +430,7 @@ bool MiniCubeSolver::singlePathSolve(const std::vector<int> &cubeState1, const s
             continue;
         }
         
-        m_blackListStates[getCubeStateStr(m_curStates[m_curStateId])] = m_hashCode;
+        m_blackListStates[getCubeStateStr(m_curStates[m_curStateId])] = true;
         
         std::vector<std::vector<int>> nextStates;
         genNext6States(m_curStates[m_curStateId],nextStates);
@@ -271,7 +507,7 @@ void MiniCubeSolver::optimizePath(std::vector<std::vector<int>> &statePath,
     //所有状态加入map
     std::map<std::string,bool> blackList;
     for(int i=0;i<statePath.size();i++)
-        blackList[getCubeStateStr(statePath[i])] = m_hashCode;
+        blackList[getCubeStateStr(statePath[i])] = true;
     
     std::vector<std::vector<int>> newStatePath;
     
@@ -303,7 +539,7 @@ void MiniCubeSolver::optimizePath(std::vector<std::vector<int>> &statePath,
         std::map<std::string,bool> sameStateStrMap;
         for(int t=0;t<tmpStates.size();t++){
             std::string stateStr = getCubeStateStr(tmpStates[t]);
-            if( blackList[stateStr] == m_hashCode ){
+            if( blackList[stateStr] == true ){
                 std::cout<<"???"<<std::endl;
                 sameStateStrMap[stateStr] = true;
             }
@@ -317,7 +553,7 @@ void MiniCubeSolver::optimizePath(std::vector<std::vector<int>> &statePath,
         int nearestStateId = i+1;
         for(int t=i;t<statePath.size();t++){
             std::string stateStr = getCubeStateStr(statePath[t]);
-            if(blackList[stateStr] == m_hashCode && 
+            if(blackList[stateStr] == true && 
                sameStateStrMap[stateStr] == true){
                 nearestStateId = t;
                 break;
